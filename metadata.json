@@ -1,0 +1,7 @@
+
+{
+  "name": "GitHub DocBiz - Leitor Inteligente de Documentos",
+  "description": "Aplicativo DocBiz para extrair dados de clientes e imóveis de documentos usando IA. Desenvolvido por Imobiz. Faça upload de documentos (JPEG, PNG, PDF, DOC, DOCX, XML, TXT, CSV) para extrair informações relevantes.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
