@@ -54,7 +54,11 @@ const App: React.FC = () => {
     return (themesOrder.includes(storedTheme as Theme) ? storedTheme : 'system') as Theme;
   });
   const [copyAllStatus, setCopyAllStatus] = useState<'idle' | 'success'>('idle');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => localStorage.getItem('geminiApiKey') || '');
 
+  useEffect(() => {
+    localStorage.setItem('geminiApiKey', geminiApiKey);
+  }, [geminiApiKey]);
 
   useEffect(() => {
     const applyTheme = (selectedTheme: Theme) => {
@@ -117,8 +121,14 @@ const App: React.FC = () => {
   const handleFileUpload = useCallback(
     async (fileName: string, fileType: string, fileContent: string) => {
       setError(null);
+      if (!geminiApiKey) {
+        setError("Por favor, insira sua chave de API do Gemini para processar documentos.");
+        // Optionally, set isLoading to false if the operation is aborted early
+        // setIsLoading(false); // Consider if this is needed based on UI feedback
+        return;
+      }
       try {
-        const extracted: ExtractedData = await extractDataFromDocument(fileContent, fileType);
+        const extracted: ExtractedData = await extractDataFromDocument(geminiApiKey, fileContent, fileType);
         const newDocument: ProcessedDocument = {
           id: crypto.randomUUID(),
           fileName,
@@ -138,7 +148,7 @@ const App: React.FC = () => {
         console.error(err);
       }
     },
-    []
+    [geminiApiKey] // Add geminiApiKey to dependencies
   );
 
   const handleDeleteDocument = useCallback((id: string) => {
@@ -406,9 +416,30 @@ const App: React.FC = () => {
         </header>
 
         <main className="flex-grow">
+          {/* START: API Key Input Section */}
+          <div className="mb-6 p-4 bg-[var(--md-sys-color-surface-container-low)] rounded-[var(--md-sys-shape-corner-medium)] shadow">
+            <label htmlFor="apiKey" className="block text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1">
+              Chave de API Gemini:
+            </label>
+            <input
+              type="password"
+              id="apiKey"
+              value={geminiApiKey}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+              placeholder="Cole sua chave de API aqui"
+              className="w-full px-3 py-2 bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline)] rounded-[var(--md-sys-shape-corner-small)] focus:ring-[var(--md-sys-color-primary)] focus:border-[var(--md-sys-color-primary)]"
+            />
+            {!geminiApiKey && (
+              <p className="mt-1 text-xs text-[var(--md-sys-color-error)]">
+                A chave de API é necessária para processar documentos.
+              </p>
+            )}
+          </div>
+          {/* END: API Key Input Section */}
+          
           <FileUpload 
             onFileUpload={handleFileUpload} 
-            isProcessing={isLoading}
+            isProcessing={isLoading || !geminiApiKey}
             setIsProcessing={setIsLoading} 
           />
 
