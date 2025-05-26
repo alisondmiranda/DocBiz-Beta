@@ -3,17 +3,6 @@ import { GoogleGenAI, GenerateContentParameters, GenerateContentResponse } from 
 import { GEMINI_MODEL_NAME, CLIENT_TYPES, COMPANY_TYPES } from '../constants';
 import { ExtractedData, ClientData, PropertyData, CompanyData } from '../types';
 
-// FIX: Initialize GoogleGenAI client as per guidelines.
-// Ensure API_KEY is set in the environment, as per project requirements.
-const apiKey = process.env.API_KEY;
-if (!apiKey) {
-  // This safeguard aligns with the original getApiKey logic.
-  // As per guidelines, API_KEY is assumed to be pre-configured and valid.
-  throw new Error(
-    "API_KEY environment variable not set. Please ensure it is configured."
-  );
-}
-const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const EXTRACTION_PROMPT_INSTRUCTIONS = `Você é um assistente de IA altamente especializado em analisar documentos diversos para extrair informações detalhadas sobre clientes (pessoas físicas), empresas (pessoas jurídicas) e propriedades (imóveis). Sua principal tarefa é identificar e extrair os dados relevantes do documento fornecido, que pode ser uma imagem (JPEG, PNG), PDF, DOC, DOCX, XML, TXT ou CSV.
 
@@ -117,10 +106,15 @@ Analise o documento fornecido a seguir e retorne APENAS o objeto JSON. Não incl
 
 
 export const extractDataFromDocument = async (
-  fileContent: string, // Can be text content or base64 data URL
+  apiKey: string, // New parameter
+  fileContent: string,
   mimeType: string
 ): Promise<ExtractedData> => {
   try {
+    if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') { // New check
+      throw new Error("Chave de API do Gemini não fornecida ou inválida.");
+    }
+    const ai = new GoogleGenAI({ apiKey: apiKey }); // New initialization
     let documentPart;
     if (mimeType.startsWith('text/')) {
       documentPart = { text: fileContent };
@@ -200,8 +194,9 @@ export const extractDataFromDocument = async (
 
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    if (error instanceof Error && error.message.includes("API_KEY")) {
-        throw new Error("Chave de API não configurada ou inválida para o Gemini. Verifique as variáveis de ambiente.");
+    // Consider updating the error message to be more generic or specifically reference the user-provided key
+    if (error instanceof Error && (error.message.includes("API key not valid") || error.message.includes("API_KEY") || error.message.includes("Chave de API") || error.message.includes("API key"))) { // Example check
+        throw new Error("Chave de API do Gemini inválida ou com problemas. Verifique a chave fornecida e tente novamente.");
     }
     throw new Error("Erro ao processar o documento com a IA. Verifique o console para mais detalhes ou tente novamente mais tarde.");
   }
